@@ -44,7 +44,7 @@ def customOps(n):
     B = tf.stack([m] for i in range(n))
     B_rev = tf.reverse(B, [-1])
     upper = tf.matrix_band_part(B_rev, 0, -1)     # Upper triangular matrix of 
-    upper_rev = tf.reverse(B_rev_upper, [-1])
+    upper_rev = tf.reverse(upper, [-1])
     B = tf.nn.softmax(B, axis = 0)
             
     
