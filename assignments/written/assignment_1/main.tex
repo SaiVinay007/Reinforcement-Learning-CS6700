@@ -1,0 +1,225 @@
+%% This is annot.tex.
+%% 
+%% You'll need to change the title and author fields to reflect your
+%% information.
+%%
+%% Author: Titus Barik (titus@barik.net)
+%% Homepage: http://www.barik.net/sw/ieee/
+%% Reference: http://www.ctan.org/tex-archive/info/simplified-latex/
+
+\documentclass [11pt]{article}
+\usepackage{amsmath}
+\usepackage{mathtools}
+\usepackage{bbold}
+\usepackage{amssymb}
+\numberwithin{equation}{section}
+
+% \usepackage[magyar]{babel}
+% \usepackage{physics}
+
+\title{CS6700 Reinforcement Learning\\
+\medskip Written Assignment \#1}
+\author{Sai Vinay G \\
+CE17B019    \\
+Indian Institute of Technology Madras }
+
+\begin{document}
+\maketitle
+\section*{Problem 1}
+\textbf{Many tic-tac-toe positions appear different but are really the same because of symmetries. How might we amend the learning process described above to take advantage of
+this? In what ways would this change improve the learning process?
+Now think again. Suppose the opponent did not take advantage of symmetries. In
+that case, should we? Is it true, then, that symmetrically equivalent positions should
+necessarily have the same value?}
+
+\begin{itemize}
+\item[-] Using symmetry we can remove all the similar positions and store only one equivalently similar position.
+
+\item[-] During learning process we can reduce the memory usage to store positions and the time required by the agent to search for next move, as the agent now has lesser number of positions which can describe all the states possible.  
+
+\item[-] If opponent does not take advantage of symmetries i.e, when there are two similar states s1, s2 the opponent takes moves, which return two dissimilar states  
+say s3 and s4. Suppose there were good and bad moves possible in s1 and s2 for the opponent to make. If the opponent makes a good move in s1 and a bad move while in s2(as our opponent does not take advantage of symmetry and considering opponent is not a good player). Thus, the agent can exploit the above bad move to increase the reward. So, its better to keep separate values for symmetrical states.
+
+\item[-] No, as described above there is a possibility to get different values for symmetrical states depending on our opponent. 
+\end{itemize}
+
+\vspace{0.5cm}
+
+\section*{Problem 2}
+\textbf{Suppose, instead of playing against a random opponent, the reinforcement learning algorithm described above played against itself, with both sides learning. What do you think would happen in this case? Would it learn a different policy for selecting moves?}
+
+\begin{itemize}
+\item[-] Here the main difference is that the agent is learning from both sides i.e, Both initially make random moves which results in winning from one side and losing from the other or draw is also possible. Each side is trying to make a better policy against an opponent, who is in turn trying to make a better policy against it. So, both will learn gradually to make better moves as both agents (itself) encounters wins, loses, draws and they keep updating their policies to become better after each update. Eventually, the policies may converge to optimal policy. 
+
+\item[-] Which will not be same as the policy learned when played against random opponent who is not learning while playing as, the agent will learn to make a policy which converges to optimal policy against the opponent. 
+% \item[-] The agent plays against itself (lets name agent1 is for one side and agent2 for the other side). If we consider reward of +1 for a win, 0 for draw and -1 for a lose. If one agent wins the other loses or else the match may result in a draw (as it is playing against itself). So, the agent will never get a net positive reward (from the above assumed rewards) So the agent cannot learn(assuming learning only takes place when the agent gets a net non zero reward). So, lets take +2 for a win, +1 for draw and 0 for a lose. 
+
+% \item[-] Now there are two cases possible so that the agent gets a net positive reward. As, agent is learning on both sides, one agent may learn to win(increases the probabilities of the states which caused a win ) and other learns to lose(increases the probabilities of the states which caused a lose) so that agent gets a net reward of +2( +2 from winning agent and 0 from losing agent) or both the agents may learn to draw  the game so that agent gets a net reward of +2 (+1 from each agent).   
+
+% \item[-] So depending on the rewards the agent may learn different policies so as to maximize the net reward agent gets. In the first case as there were no net rewards it goes on playing random moves. But whereas, in second case it may end up always making draws or one side winning and other side losing.
+
+% If agent1 wins, it increases the probabilities of the states due to which it won the game and the agent2 decreases the probability of the states because of which it lost the game.
+\end{itemize}
+
+\vspace{0.5cm}
+
+\section*{Problem 3}
+\textbf{Suppose the reinforcement learning player was greedy, that is, it always played the move that brought it to the position that it rated the best. Might it learn to play better, or worse, than a non-greedy player? What problems might occur?}
+\begin{itemize}
+    \item[-] It will not be able to play better than a non-greedy player as it does explore much and only has the policy for small set of states.
+    \item[-] The greedy hasn't seen lot of states. So, it might not be able to learn the optimal moves possible from a state and when a new state appears the greedy agent doesn't know what to do as it did not see the state before. These can be tackled by making the agent to explore more.  
+    \item[-] As, the greedy agent doesn't explore more, it may get stuck with sub optimal moves and keep on playing those, where there are better optimal moves possible.
+\end{itemize}
+
+\vspace{0.5cm}
+
+\section*{Problem 4}
+\textbf{The results shown in Figure 2.3 (of course text book uploaded in moodle) should be quite reliable because they are averages over 2000 individual, randomly chosen 10-armed bandit tasks. Why, then, are there oscillations and spikes in the early part of the curve for the optimistic method? In other words, what might make this method perform particularly better or worse, on average, on particular early steps?}
+\begin{itemize}
+    \item[-] Initially as each arm was having high expected value (+5), optimal method  chooses each of the arm once and moves to next as the expected reward after once pulling decreases as the maximutm possible for each arm is is very less(as they are sampled from mean=0 and variance=1). But, as returns from the optimal arm more likely to be higher than other arms, So, 40\% of the times optimal arm was chosen (reason for spikes). But, after pulling the optimal arm for few number of times the expected reward still decreases. As, the other arms even though being not optimal, all were initialized to give an expected reward of +5 and they were pulled less number of times(as compared to optimal)so their expected rewards are be still higher than the optimal arm which is pulled for some number of times. So, this switching between optimal and not optimal action is cause of oscillations.
+    
+    \item[-] This method better because it encourages enough exploration and then after finding optimal arm it doesn't explore, which is the cause for better performance as, $\epsilon$ - greedy even after finding the optimal arm, it still explore which results in decrease of performance.
+    
+    \item[-] As, it explores rapidly in the early steps, it is more likely that it finds the optimal arms whereas, the $\epsilon$ - greedy explores much slowly.
+    So, the optimistic approach has better early performance.
+\end{itemize}
+
+\vspace{0.5cm}
+
+\section*{Problem 5}
+\textbf{Define a bandit set up as follows. At each time instant for each arm of the bandit we sample a reward from some unknown distribution. Now the agent picks an arm. The environment then reveals all the rewards that were chosen. Regret is now defined as the difference between the best arm at that instant and the one chosen summed over all times steps. Would the existing algorithms for bandit problems work well in this
+setting? Can we do better by taking advantage of the fact that all rewards are revealed? For e.g., exploration is not an issue now, since all arms are revealed at each time step.}
+
+\begin{itemize}
+    % \item[-] We can have mu_t_tch better algorithms for this case so as to find the optimal arm quickly.
+    \item[-] The existing algorithms will work well in this case. Here, we can take the advantage of the fact that environment is revealing the rewards that would have got by the agent only if it had chosen that arm.
+    
+    \item[-] Previously, in order to find the reward that an arm gives we had to pull it and then check. In this case its easy to find the optimal arm quickly as in each move we will be knowing the rewards obtained from all the arms.(i.e, previously to get 5 reward values from each arm we had to pull a total of 5*(no of arms) times, but now it can be done only by pulling 5 times ).
+    
+    \item[-] So, now we keep track of the rewards of all arms, every time we pull any arm and find the expected reward of each arm at every step and chose the arm which has maximum expected reward to pull for next time. 
+
+\end{itemize}
+
+\vspace{0.5cm}
+
+\section*{Problem 6}
+\textbf{Consider a bandit problem in which you know the set of expected payoffs for pulling various arms, but you do not know which arm maps to which expected payoff. For example, consider a 5 arm bandit problem and you know that the arms 1 through 5have payoffs 3.1, 2.3, 4.6, 1.2, 0.9, but not necessarily in that order. Can you design a regret minimizing algorithm that will achieve better bounds than UCB? What makes you believe that it is possible? What parts of the analysis of UCB will you modify to achieve better bounds? Note that I am not asking you for a complete algorithm or analysis, only the intuition.}
+
+\begin{itemize}
+    \item[-] As the difference in the expected payoffs is high. So, it is possible to design a regret minimizing algorithm achieving better bounds than UCB. 
+    \item[-] In general UCB we first try all arms once and then loop over such that, at each step we select an arm $j$ which maximizes $ \bigg( Q(j) + \sqrt{\frac{2ln n}{n_j}} \bigg)$ , where the first term is the estimate of the arm, the second term in the expression is the uncertainty in the estimate.
+    \item[-] If for an arm $j$ we have $ \bigg( Q(j) - \sqrt{\frac{2ln n}{n_j}} \bigg) > 3.1  $ , implies that with high confidence we are sure that our expected value's lower bound is greater than 3.1. Hence, as there is only one arm which has expected payoff greater than 3.1 i.e, 4.6, which is the optimal arm and in between, we can keep on elimination the sub optimal arms i.e,  if for arm $j$ we have $\bigg( Q(j) + \sqrt{\frac{2ln n}{n_j}} \bigg) < 4.6$, and we will be left with optimal arm quickly.
+    \item[-] After we get the optimal arm we discard the other arms and select only the optimal which reduces the regret as we found out the optimal quicker than normal UCB.
+\end{itemize}
+
+\vspace{0.5cm}
+
+\section*{Problem 7}
+\textbf{Consider a bandit problem in which the parameters on which the policy depends are the preferences of the actions and the action selection probabilities are determined by the softmax relationship as $\pi_t (a) = \frac{e^{\rho_t_t}}{\sum_{b=1}^{n}e^{\rho_t(b)}} $, where n is the total number of actions and $ \rho_t(a)$ is the preference value of action a at time $t$. Derive the parameter update conditions according to the REINFORCE procedure considering the above described parameters and where the baseline is the reference reward defined as $ \overline{r_{t+1}} = \overline{r_t} + \beta [r{_t} - \overline{r_t} ]$, where $r_t$ is the reward received at time $t$ and $\beta$ is the step size parameter.}
+
+According to REINFORCE procedure we update parameters as, 
+\begin{align*}
+    \theta_{t+1} &\leftarrow \theta_{t} + \Delta\theta_{t} \\
+where \ \Delta\theta_t &= \alpha_t (r_t - b_t) \nabla_\theta ln \ \pi(a_t;\theta)   
+\end{align*}    
+
+Here, the parameters are the preferences of the actions. So, we get 
+\begin{align*}
+    \Delta \rho_t(a) = \alpha_t (r_t - b_t) \nabla_{\rho_t(a)}
+    ln \ \pi(a_t;\rho_t(a)) \ \ \ a \ is \ arbitrary \ action  \\
+    Given \ reinforcement \ baseline \ is \ \overline{r_{t+1}} = \overline{r_t} + β [r{_t} - \overline{r_t} ] \\
+    Given \ \pi(a_t) = \frac{e^{\rho_t(a_t)}}{\sum_{b=1}^k e^{\rho_t(b)}}
+\end{align*}
+
+Lets first evaluate $ \nabla_{\rho_t(a)} ln \pi(a_t;\rho_t(a)) $ 
+\begin{align*}
+    ln \pi(a_t;\theta) &= ln(e^{\rho_t(a_t)}) - ln (\sum_{b=1}^k e^{\rho_t(b)})   \\
+    &= \rho_t(a_t) - ln (\sum_{b=1}^k e^{\rho_t(b)})  \\
+    \nabla_{\rho_t(a)} ln \pi(a_t;\theta) &=  \frac{\partial ln \pi(a_t;\theta)}{\partial \rho_t(a)}    \\
+    &=  \mathbb{1}_{a_t = a} - \frac{e^{\rho_t(a)}}{\sum_{b=1}^k e^{\rho_t(b)}}   \\
+    &=  \mathbb{1}_{a_t = a} - \pi_t(a)     \\
+    \implies \Delta \rho_t(a) &= \alpha_t(r_t - b_t)(\mathbb{1}_{a_t = a} - \pi_t(a)) \\
+    Given \ b_t = \overline{r_{t-1}} + \beta [r{_{t-1}} - \overline{r_{t-1}} ]  \\
+    \therefore \Delta \rho_t(a) &= \alpha_t(r_t -  \overline{r_{t-1}} - \beta [r{_{t-1}} - \overline{r_{t-1}} ])(\mathbb{1}_{a_t = a} - \pi_t(a))     \\
+\end{align*}
+
+The update equation is  :
+
+\begin{align*}
+    \rho_{t+1}(a) \leftarrow \rho_{t}(a) + \alpha_t(r_t -  \overline{r_{t-1}} - \beta [r{_{t-1}} - \overline{r_{t-1}} ])(\mathbb{1}_{a_t = a} - \pi_t(a))
+\end{align*}
+
+
+\vspace{0.5cm}
+
+\section*{Problem 8}
+\textbf{Repeat the above problem for the case where the parameters are the mean and variance of the Normal distribution according to which the actions are selected and the baseline is zero.}
+
+\begin{itemize}
+    \item[-] Given the parameters are mean $ \mu_t$  and variance $\sigma^2 $ of a normal distribution.
+    \item[-] The action taken is a continuous random variable with normal distribution.
+\end{itemize}
+
+According to REINFORCE procedure we update parameters as, 
+\begin{align*}
+    \theta_{t+1} &\leftarrow \theta_{t} + \Delta\theta_{t} \\
+where \ \Delta\theta_t &= \alpha_t (r_t - b_t) \frac{\nabla_\theta \pi(a_t;\theta)}{\pi(a_t;\theta)}
+\end{align*}   
+
+Here probability of selecting an action $a_t$ is, $$\pi(a_t) = \int_{a_t}\frac{1}{\sqrt{2\pi\sigma_t^2}} e^{- {\bigg(\frac{a_t - \mu_t_t}{\sqrt{2}\sigma_t}\bigg)}^2} da $$ \\
+
+\begin{itemize}
+    \item Lets first derive the update rule for $\mu_t$ 
+\end{itemize}
+
+\begin{align*}
+    \Delta \mu_t &= \alpha_t(r_t - b_t) \frac{\nabla_{\mu{_t}} \pi(a_t;\mu _t)}{\pi(a_t;\mu_t)} \\
+\end{align*}    
+    
+Lets evaluate $\frac{\nabla_{\mu{_t}} \pi(a_t;\mu_t)}{\pi(a_t;\mu_t)}$ 
+
+\begin{align*}
+    \frac{\nabla_{\mu{_t}} \pi(a_t;\mu_t)}{\pi(a_t;\mu_t)} &= \frac{ \nabla_{\mu_t} \int_{a_t}  \frac{1}{\sqrt{2\pi\sigma_t^2}} e^{- {\bigg(\frac{a_t - \mu_t}{\sqrt{2}\sigma_t}\bigg)}^2}da }{\int_{a_t}\frac{1}{\sqrt{2\pi\sigma_t^2}} e^{- {\bigg(\frac{a_t - \mu_}{\sqrt{2}\sigma_t}\bigg)}^2} da}  \\
+    &= \frac{  \int_{a_t} \nabla_{\mu_t}  \frac{1}{\sqrt{2\pi\sigma_t^2}} e^{- {\bigg(\frac{a_t - \mu_t}{\sqrt{2}\sigma_t}\bigg)}^2}da }{\int_{a_t}\frac{1}{\sqrt{2\pi\sigma_t^2}} e^{- {\bigg(\frac{a_t - \mu_t_t}{\sqrt{2}\sigma_t}\bigg)}^2} da}  \\
+    &= \frac{  \int_{a_t} \frac{\partial}{\partial \mu_t}  \frac{1}{\sqrt{2\pi\sigma_t^2}} e^{- {\bigg(\frac{a_t - \mu_t}{\sqrt{2}\sigma_t}\bigg)}^2}da }{\int_{a_t}\frac{1}{\sqrt{2\pi\sigma_t^2}} e^{- {\bigg(\frac{a_t - \mu_t_t}{\sqrt{2}\sigma_t}\bigg)}^2} da}  \\
+    &= \bigg(\frac{a_t - \mu_t}{\sigma_t^2}\bigg) \frac{  \int_{a_t}   \frac{1}{\sqrt{2\pi\sigma_t^2}} e^{- {\bigg(\frac{a_t - \mu_t}{\sqrt{2}\sigma_t}\bigg)}^2}da }{\int_{a_t}\frac{1}{\sqrt{2\pi\sigma_t^2}} e^{- {\bigg(\frac{a_t - \mu_t_t}{\sqrt{2}\sigma_t}\bigg)}^2} da} \\
+    &= \bigg(\frac{a_t - \mu_t}{\sigma_t^2}\bigg)   \\
+\end{align*} 
+
+Given baseline = 0  \\
+
+The update equation for $\mu$ is :
+
+\begin{align*}
+    \mu_{t+1} \leftarrow \mu_{t} + \alpha_t r_t\bigg(\frac{a_t - \mu_t}{\sigma_t^2}\bigg)
+\end{align*}
+
+\begin{itemize}
+    \item Now the update rule for $\sigma_t$ 
+\end{itemize}
+
+\begin{align*}
+    \Delta \sigma_t &= \alpha_t(r_t - b_t) \frac{\nabla_{\sigma{_t}} \pi(a_t;\sigma _t)}{\pi(a_t;\sigma_t)} \\
+\end{align*} 
+
+Lets evaluate $\frac{\nabla_{\sigma{_t}} \pi(a_t;\sigma_t)}{\pi(a_t;\sigma_t)}$
+
+\begin{align*}
+    \frac{\nabla_{\sigma{_t}} \pi(a_t;\sigma_t)}{\pi(a_t;\sigma_t)} &= \frac{ \nabla_{\sigma_t} \int_{a_t}  \frac{1}{\sqrt{2\pi\sigma_t^2}} e^{- {\bigg(\frac{a_t - \mu_t}{\sqrt{2}\sigma_t}\bigg)}^2}da }{\int_{a_t}\frac{1}{\sqrt{2\pi\sigma_t^2}} e^{- {\bigg(\frac{a_t - \mu_t}{\sqrt{2}\sigma_t}\bigg)}^2} da}  \\
+    &= \frac{  \int_{a_t} \nabla_{\sigma_t}  \frac{1}{\sqrt{2\pi\sigma_t^2}} e^{- {\bigg(\frac{a_t - \mu_t}{\sqrt{2}\sigma_t}\bigg)}^2}da }{\int_{a_t}\frac{1}{\sqrt{2\pi\sigma_t^2}} e^{- {\bigg(\frac{a_t - \mu_t_t}{\sqrt{2}\sigma_t}\bigg)}^2} da}  \\
+    &= \frac{  \int_{a_t} \frac{\partial}{\partial \sigma_t}  \frac{1}{\sqrt{2\pi\sigma_t^2}} e^{- {\bigg(\frac{a_t - \mu_t}{\sqrt{2}\sigma_t}\bigg)}^2}da }{\int_{a_t}\frac{1}{\sqrt{2\pi\sigma_t^2}} e^{- {\bigg(\frac{a_t - \mu_t_t}{\sqrt{2}\sigma_t}\bigg)}^2} da}  \\
+    &= -\frac{1}{\sigma_t} \Bigg[ 1 + \frac{(a_t - \mu_t)^2}{\sigma_t^2}\Bigg] \frac{  \int_{a_t}   \frac{1}{\sqrt{2\pi\sigma_t^2}} e^{- {\bigg(\frac{a_t - \mu_t}{\sqrt{2}\sigma_t}\bigg)}^2}da }{\int_{a_t}\frac{1}{\sqrt{2\pi\sigma_t^2}} e^{- {\bigg(\frac{a_t - \mu_t_t}{\sqrt{2}\sigma_t}\bigg)}^2} da} \\
+    &=  -\frac{1}{\sigma_t} \Bigg[ 1 + \frac{(a_t - \mu_t)^2}{\sigma_t^2}\Bigg]  
+\end{align*} 
+
+The update equation for $\sigma$ is :
+
+\begin{align*}
+    \sigma_{t+1} \leftarrow \sigma_{t} - \alpha_t r_t \frac{1}{\sigma_t} \Bigg[ 1 + \frac{(a_t - \mu_t)^2}{\sigma_t^2}\Bigg]  
+\end{align*}
+
+
+\nocite{*}
+% \bibliographystyle{IEEEannot}
+\bibliography{annot}
+\end{document}
