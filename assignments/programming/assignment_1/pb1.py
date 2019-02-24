@@ -1,3 +1,6 @@
+'''
+Complete code
+'''
 import numpy as np
 from matplotlib import pyplot as plt
 
@@ -8,16 +11,13 @@ problems with k = 10
 '''
 
 
-def bandits(epsilon, steps, runs, mean, std_dev):
+def Epsilon_greedy(k, epsilon, steps, runs, true_values):
+    
+    optimal_arm = np.argmax(true_values,axis=1)
     
     avg = np.zeros([steps])
     opt = np.zeros([steps])
     
-    
-    true_values = np.random.normal(mean, std_dev, (runs, k )) 
-    # print(true_values)
-    optimal_arm = np.argmax(true_values,axis=1)
-    # print(true_values)
     
     for i in range(runs):
         '''
@@ -49,7 +49,7 @@ def bandits(epsilon, steps, runs, mean, std_dev):
                 if optimal_arm[i] == max_arm[0]:
                     opt[j] += 1
         
-            avg[j] = avg[j]+reward # for each step add the reward obtained
+            avg[j] = avg[j]+reward # To store rewards obtained on every step of every run
 
     # print(exp_val)
     # print(mx, rn)
@@ -65,8 +65,8 @@ def plot_fig(avg_reward, opt_percent):
     fig1=plt.figure()
     fig2=plt.figure()
 
-    fig1 = fig1.add_axes([0.1, 0.1, 0.75, 0.75])
-    fig2 = fig2.add_axes([0.1, 0.1, 0.75, 0.75])
+    fig1 = fig1.add_axes([0.1, 0.1, 0.6, 0.75])
+    fig2 = fig2.add_axes([0.1, 0.1, 0.6, 0.75])
 
     x = np.zeros([steps])
     for i in range(1,steps+1):
@@ -108,10 +108,13 @@ if __name__ == '__main__':
     mean = 0
     std_dev = 1
 
-    avg_reward = []
-    opt_arm = []
+    avg_reward = []  # store for all epsilons
+    opt_arm = []     # store for all epsilons
+    
+    true_values = np.random.normal(mean, std_dev, (runs, k )) 
+    
     for i in range(len(epsilons)):
-        a, b = bandits(epsilons[i], steps, runs, mean, std_dev)
+        a, b = Epsilon_greedy(10, epsilons[i], steps, runs, true_values)
         avg_reward.append(a)
         opt_arm.append(b)
     
