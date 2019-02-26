@@ -13,7 +13,7 @@ problems with k = 10
 
 def Epsilon_greedy(k, epsilon, steps, runs, true_values):
     
-    optimal_arm = np.argmax(true_values,axis=1)
+    opt_arms = np.argmax(true_values,axis=1)
     
     avg = np.zeros([steps])
     opt = np.zeros([steps])
@@ -23,7 +23,8 @@ def Epsilon_greedy(k, epsilon, steps, runs, true_values):
         '''
         Initialize the expected values of each action to zero 
         '''
-        exp_val = np.zeros([10,2])
+        Q = np.zeros([k])
+        N = np.zeros([k])
             
         '''
         Pull the arms 2000 times by following epsilon-greedy approach
@@ -32,33 +33,29 @@ def Epsilon_greedy(k, epsilon, steps, runs, true_values):
         for j in range(steps):
             num = np.random.uniform(0,1)
             
+            
             if num<epsilon:
-                random_arm = np.random.randint(0,10)   # pick a random arm
-                reward = np.random.normal(true_values[i][random_arm],1)   # get the reward using the true expectation
-                exp_val[random_arm][1] += 1   # increase the count of the arm
-                exp_val[random_arm][0] = (exp_val[random_arm][0]*(exp_val[random_arm][1]-1) + reward)/exp_val[random_arm][1]   # average of the values of arm
-                if optimal_arm[i] == random_arm:
-                    opt[j] += 1
+                arm = np.random.randint(0,k)   # pick a random arm
             else:
-                max_arm = np.argmax(exp_val, axis = 0)    # get the max expectation 
-                reward = np.random.normal(true_values[i][max_arm[0]],1)   # get reward using true distribution
-                exp_val[max_arm[0]][1] += 1   # increase the count of arm
-                exp_val[max_arm[0]][0] = ((exp_val[max_arm[0]][0])*(exp_val[max_arm[0]][1]-1) + reward)/exp_val[max_arm[0]][1] # average of the values of arm
-                # print(max_arm[0], optimal_arm)
-                
-                if optimal_arm[i] == max_arm[0]:
-                    opt[j] += 1
+                arm = np.argmax(Q, axis = 0)    # get the max expectation 
+            
+            reward = np.random.normal(true_values[i][arm],1)
+            N[arm] += 1
+            Q[arm] = Q[arm] + (reward - Q[arm])/N[arm]
+            if opt_arms[i] == arm:
+                opt[j] += 1
         
-            avg[j] = avg[j]+reward # To store rewards obtained on every step of every run
+            avg[j] += reward # To store rewards obtained on every step of every run
 
     # print(exp_val)
     # print(mx, rn)
-    avg = np.divide(avg,runs)
-    opt = np.divide(opt, 20.0)
+    avg = np.divide(avg,runs)  # average of reward at each step over all bandit problems
+    opt = np.divide(opt, runs/100)  # percentage of the times that optimal action is chosen at a time step over all bandit problems
+    
     return avg,opt
 
 
-def plot_fig(avg_reward, opt_percent):
+def plot_all(avg_reward, opt_percent):
 
 
 
@@ -68,7 +65,7 @@ def plot_fig(avg_reward, opt_percent):
     fig1 = fig1.add_axes([0.1, 0.1, 0.6, 0.75])
     fig2 = fig2.add_axes([0.1, 0.1, 0.6, 0.75])
 
-    x = np.zeros([steps])
+    x = np.zeros([len(avg_reward[0])])
     for i in range(1,steps+1):
         x[i-1] = i
 
@@ -114,8 +111,8 @@ if __name__ == '__main__':
     true_values = np.random.normal(mean, std_dev, (runs, k )) 
     
     for i in range(len(epsilons)):
-        a, b = Epsilon_greedy(10, epsilons[i], steps, runs, true_values)
-        avg_reward.append(a)
-        opt_arm.append(b)
+        avg, opt = Epsilon_greedy(k, epsilons[i], steps, runs, true_values)
+        avg_reward.append(avg)
+        opt_arm.append(opt)
     
-    plot_fig(avg_reward, opt_arm)
+    plot_all(avg_reward, opt_arm, epsilons)

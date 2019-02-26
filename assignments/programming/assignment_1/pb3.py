@@ -1,81 +1,75 @@
 import numpy as np
 from matplotlib import pyplot as plt
 import math
-from pb1 import Epsilon_greedy
 
 def UCB1(k, steps, runs, true_values, c):
     avg = np.zeros([steps])
     opt = np.zeros([steps])
     
-    optimal_arm = np.argmax(true_values,axis = 1)
-    
-    for i in range(runs):
-        
+    opt_arms = np.argmax(true_values,axis = 1)
+    print(c)
+    for i in range(runs):   
         '''
-        Expected rewards of each arm. each arm has a value and the number of times it has been pulled.
+        Expected rewards of each arm. Each arm has a value and the number of times it has been pulled.
         ''' 
-        exp_val = np.zeros([k,2])   
+        Q = np.zeros([k])
+        N = np.ones([k])
         
         '''
         Pull each arm once
         '''
-        upper_bounds = []
+        Q_1 = np.random.normal(true_values[i],1)
         
-        for j in range(steps):
+        avg[0] += np.mean(Q_1)  
+        
+        for j in range(2, steps+1):
+            '''
+            Selecting the arm which has highest upper confidence bound
+            '''
+            upper_bounds = Q + np.sqrt(c*np.log(j)/N)
+
+            max_arm = np.argmax(upper_bounds)
+            reward = np.random.normal(true_values[i][max_arm],1)
             
-            if j<k:
-                '''
-                Pulling each once.
-                '''
-                reward = np.random.normal(true_values[i][j],1)  
-                
-                exp_val[j][1] += 1
-#                 print(reward)
-                exp_val[j][0] += reward
-                
-                upper_bounds.append(reward)
-            
-            else:
-                '''
-                Selecting the arm which has highest upper confidence bound
-                '''
-                max_arm = np.argmax(upper_bounds)
-                reward = np.random.normal(true_values[i][max_arm],1)
-                
-                exp_val[max_arm][1] += 1
-                exp_val[max_arm][0] = (exp_val[max_arm][0]*(exp_val[max_arm][1]-1)+reward)/exp_val[max_arm][1]         
-                
-                upper_bounds[max_arm] = exp_val[max_arm][0] + c*np.sqrt(np.log(j)/exp_val[max_arm][1]) 
-                
-                if optimal_arm[i] == max_arm:
-                    opt[j]+=1
+            N[max_arm] += 1
+            Q[max_arm] = Q[max_arm] + (reward - Q[max_arm])/N[max_arm]         
+
+            if opt_arms[i] == max_arm:
+                opt[j-2]+=1
 
         
-            avg[j] += reward
+            avg[j-1] += reward
             
+
     avg = np.divide(avg, runs)
     opt = np.divide(opt, runs/100)
         
     return avg, opt
     
-       
-    
 
-def plot_fig(avg, opt):
-    
-    fig1=plt.figure()
-    fig2=plt.figure()
 
-    fig1 = fig1.add_axes([0.1, 0.1, 0.6, 0.75])
-    fig2 = fig2.add_axes([0.1, 0.1, 0.6, 0.75])
+def plot_all(avg_reward, opt_percent, C):
 
-    x = np.zeros([len(avg)])
+
+
+#     fig1=plt.figure()
+#     fig2=plt.figure()
+
+#     fig1 = fig1.add_axes([0.1, 0.1, 0.6, 0.75])
+#     fig2 = fig2.add_axes([0.1, 0.1, 0.6, 0.75])
+    fig1=plt.figure(figsize=(10,6)).add_subplot(111)
+    fig2=plt.figure(figsize=(10,6)).add_subplot(111)
+
+    x = np.zeros([len(avg_reward[0])])
     for i in range(1,steps+1):
         x[i-1] = i
 
-    fig1.plot(x, avg, 'r')
+    colors = ['k', 'r', 'b', 'm', 'y','g', 'c']
+    for i in range(len(avg_reward)):
+        fig1.plot(x, avg_reward[i], colors[i], label = "c = " + str(C[i]) )
 
-    fig2.plot(x, opt, 'b')
+    for i in range(len(opt_percent)):
+        fig2.plot(x, opt_percent[i], colors[i], label = "c = " + str(C[i]) )
 
     fig1.title.set_text('UCB1 : Average Reward Vs Steps for 10 arms')
     fig1.set_ylabel('Average Reward')
@@ -97,44 +91,25 @@ def plot_fig(avg, opt):
     plt.show()
 
 
-
-def compare_epsilon_ucb(true_values):
-    steps = 1000
-    runs = 2000
-    epsilons = [0.1]
-    k = 10
-    mean = 0
-    std_dev = 1
-    c = 2
-    
-    avg_epsi,_ = Epsilon_greedy(k, epsilons[0], steps, runs, true_values)
-    avg_ucb,_  =  UCB1(k, steps, runs, true_values, c)
-    
-    plt.plot(range(len(avg_epsi)), avg_epsi, 'r', label = "$\epsilon$ = " + str(epsilons[0]) )
-    plt.plot(range(len(avg_ucb)), avg_ucb, 'b', label = "UCB1")
-    
-    plt.xlabel('Steps', fontsize = 15)
-    plt.ylabel('Average reward', fontsize = 15)
-    plt.title('Comparition between epsilon greedy and UCB1', fontsize = 15)
-    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-    plt.ylim(0, 1.6)
-
-
-    plt.show()
-    
-    
-
 if __name__ == '__main__':
     steps = 1000
     runs = 2000
     k = 10
     mean = 0
     std_dev = 1
-    c = 2
+    C = [0.1, 2, 5]
     true_values = np.random.normal(mean, std_dev, (runs, k))
-
-    # avg, opt = UCB1(k, steps, runs, true_rewards, c)
-    compare_epsilon_ucb(true_values)
-    # plot_fig(avg, opt)
     
+    avg_reward = []
+    opt_arm = []
+    
+    for i in range(len(C)):
+        print(i)
+        avg, opt = UCB1(k, steps, runs, true_values, C[i])
+        avg_reward.append(avg)
+        opt_arm.append(opt)
+    
+    plot_all(avg_reward, opt_arm, C)
+
+
     
