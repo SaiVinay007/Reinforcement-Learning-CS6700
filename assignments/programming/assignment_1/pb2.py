@@ -6,6 +6,7 @@ def Softmax(k, steps, runs, true_values, temp):
     avg = np.zeros([steps])
     opt = np.zeros([steps])
     
+    print(temp)
     opt_arms = np.argmax(true_values, axis=1)
     for i in range(runs):
         

@@ -52,13 +52,13 @@ def plot_all(avg_reward, opt_percent, C):
 
 
 
-#     fig1=plt.figure()
-#     fig2=plt.figure()
+    fig1=plt.figure()
+    fig2=plt.figure()
 
-#     fig1 = fig1.add_axes([0.1, 0.1, 0.6, 0.75])
-#     fig2 = fig2.add_axes([0.1, 0.1, 0.6, 0.75])
-    fig1=plt.figure(figsize=(10,6)).add_subplot(111)
-    fig2=plt.figure(figsize=(10,6)).add_subplot(111)
+    fig1 = fig1.add_axes([0.1, 0.1, 0.7, 0.8])
+    fig2 = fig2.add_axes([0.1, 0.1, 0.7, 0.8])
+    # fig1=plt.figure(figsize=(10,6)).add_subplot(111)
+    # fig2=plt.figure(figsize=(10,6)).add_subplot(111)
 
     x = np.zeros([len(avg_reward[0])])
     for i in range(1,steps+1):
@@ -86,8 +86,8 @@ def plot_all(avg_reward, opt_percent, C):
     fig1 = fig1.get_figure()
     fig2 = fig2.get_figure()
 
-    # fig1.savefig('fig1.jpg')
-    # fig2.savefig('fig2.jpg')
+    fig1.savefig('UCB_rew.jpg')
+    fig2.savefig('UCB_per.jpg')
     plt.show()
 
 
@@ -104,7 +104,6 @@ if __name__ == '__main__':
     opt_arm = []
     
     for i in range(len(C)):
-        print(i)
         avg, opt = UCB1(k, steps, runs, true_values, C[i])
         avg_reward.append(avg)
         opt_arm.append(opt)
