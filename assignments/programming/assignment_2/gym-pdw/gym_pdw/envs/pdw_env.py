@@ -28,12 +28,12 @@ class PdwEnv(gym.Env):
 
         # actions possible
         # Our origin is on the top left corner
-        self.actions = {0 : [-1,0] # North
+        self.actions = {0 : [-1,0], # North
                         1 : [0,1], # East
-                        2 : [0,-1] # West
-                        3 : [1,0], # South
+                        2 : [0,-1], # West
+                        3 : [1,0] # South
                         } 
-                        
+
         self.action_space = spaces.Discrete(len(self.actions))
         self.observation_space = spaces.Box(low = -3, high = 10, shape = self.grid.shape)
         # print(self.action_space)
