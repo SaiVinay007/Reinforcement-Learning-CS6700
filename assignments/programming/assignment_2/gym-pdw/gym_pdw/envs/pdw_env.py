@@ -15,7 +15,8 @@ class PdwEnv(gym.Env):
         self.grid = np.zeros([12,12], dtype=np.int64)
         
         # Start positions
-        self.start_positions = [[6,0],[7,0],[10,0],[11,0]]
+
+        # self.start_positions = [[6,0],[7,0],[10,0],[11,0]]
 
         # Goal positions A, B, C
         self.goal_positions = [[0,11],[2,9],[7,8]]
@@ -23,7 +24,10 @@ class PdwEnv(gym.Env):
         # Initialize the start state
         idx = np.random.choice([0,1,2,3])
         # The current position
-        # self.current_position = self.start_positions[idx]
+        temp = [[6,0],[7,0],[10,0],[11,0]]
+        self.current_position = temp[idx]
+
+        # self.current_position = get_start_positions()[idx]
         
 
         # actions possible
@@ -49,18 +53,39 @@ class PdwEnv(gym.Env):
 
         # initilalize reward
         self.reward = 0
+    
+    # def make_grid(self):
+    #     self.grid = np.zeros([12,12], dtype=np.int64)
+    #     self.grid[5:8,6:8]      -= 1
+    #     self.grid[6:8,7]        += 1
+    #     self.grid[4:9,5:9]      -= 1
+    #     self.grid[7:9,8]        += 1
+    #     self.grid[3:10,4:10]    -= 1
+    #     self.grid[8:10,9]       += 1
+
+    #     return self.grid
+
+
+    def get_start_positions(self):
+        s_p = [[6,0],[7,0],[10,0],[11,0]]
+        # print(s_p)
+        return s_p
+
 
     def set_goal(self,goal):
         if goal=='A':
-            self.grid[self.goal_positions[0]] += 10
+            x, y = self.goal_positions[0]
+            self.grid[x,y] += 10
             self.wind = 1
             return self.goal_positions[0]
         elif goal=='B':
-            self.grid[self.goal_positions[1]] += 10
+            x, y = self.goal_positions[1]
+            self.grid[x,y] += 10
             self.wind = 1
             return self.goal_positions[1]
         elif goal=='C':
-            self.grid[self.goal_positions[2]] += 10
+            x, y = self.goal_positions[2]
+            self.grid[x,y] += 10
             self.wind = 0
             return self.goal_positions[2]
 
@@ -70,9 +95,11 @@ class PdwEnv(gym.Env):
         self.reward = self.grid[position[0],position[1]]
         return self.reward
 
+    
     def get_state(self):
         return self.current_position
-      
+
+
     def step(self, selected_action):
         # Return the postion,reward after performing an action.
 
@@ -108,6 +135,7 @@ class PdwEnv(gym.Env):
 
         return
 
+
     def get_action_probs(self, selected_action):
         # Get the probabilities of performing an action 
         self.probs = [0.1/3, 0.1/3, 0.1/3, 0.1/3]
@@ -126,14 +154,12 @@ class PdwEnv(gym.Env):
     def reset(self):
         # Initialize the start state
         idx = np.random.choice([0,1,2,3])
-        print(self.start_positions, idx)
-        pos = self.start_positions[idx]
+        s_pos = self.get_start_positions()
+        # print(s_pos, idx)
+        pos = s_pos[idx]
         self.current_position = pos
-        print(self.current_position)
-        # The current position
-        # self.current_position = self.start_position
-
-        # return self.current_position
+        # self.grid = self.make_grid()
+        
 
     
     def render(self, mode='human'):
