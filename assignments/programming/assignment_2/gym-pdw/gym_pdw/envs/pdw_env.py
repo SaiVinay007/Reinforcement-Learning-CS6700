@@ -124,16 +124,20 @@ class PdwEnv(gym.Env):
             self.current_position[1] + self.actions[self.direction][1] + self.push > 11)  :
 
             self.reward = self.get_reward(self.current_position)
+            # print(self.current_position, self.reward, "Step")
+            # print("if")
             return self.current_position, self.reward
 
         else : 
-            self.current_position[0] += self.actions[self.direction][0]
-            self.current_position[1] += self.actions[self.direction][1] + self.push
-            
+            x = self.current_position[0] + self.actions[self.direction][0]
+            y = self.current_position[1] + self.actions[self.direction][1] + self.push
+            self.current_position = [x,y]
             self.reward = self.get_reward(self.current_position)
+            # print(self.current_position, self.direction, self.reward, "Step")
+            # print("else",self.actions[self.direction][0], self.actions[self.direction][1] + self.push )
             return self.current_position, self.reward
 
-        return
+        
 
 
     def get_action_probs(self, selected_action):
