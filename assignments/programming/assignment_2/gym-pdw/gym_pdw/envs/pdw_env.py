@@ -54,16 +54,6 @@ class PdwEnv(gym.Env):
         # initilalize reward
         self.reward = 0
     
-    # def make_grid(self):
-    #     self.grid = np.zeros([12,12], dtype=np.int64)
-    #     self.grid[5:8,6:8]      -= 1
-    #     self.grid[6:8,7]        += 1
-    #     self.grid[4:9,5:9]      -= 1
-    #     self.grid[7:9,8]        += 1
-    #     self.grid[3:10,4:10]    -= 1
-    #     self.grid[8:10,9]       += 1
-
-    #     return self.grid
 
 
     def get_start_positions(self):
@@ -75,17 +65,17 @@ class PdwEnv(gym.Env):
     def set_goal(self,goal):
         if goal=='A':
             x, y = self.goal_positions[0]
-            self.grid[x,y] += 10
+            self.grid[x,y] = 10
             self.wind = 1
             return self.goal_positions[0]
         elif goal=='B':
             x, y = self.goal_positions[1]
-            self.grid[x,y] += 10
+            self.grid[x,y] = 10
             self.wind = 1
             return self.goal_positions[1]
         elif goal=='C':
             x, y = self.goal_positions[2]
-            self.grid[x,y] += 10
+            self.grid[x,y] = 10
             self.wind = 0
             return self.goal_positions[2]
 
@@ -100,44 +90,12 @@ class PdwEnv(gym.Env):
         return self.current_position
 
 
-    def step(self, selected_action):
-        # Return the postion,reward after performing an action.
-
+    def actual_action(self, selected_action):
         self.probs = self.get_action_probs(selected_action)
         self.direction = np.random.choice(range(4),1,self.probs)
         self.direction = self.direction[0]
 
-        # Because of wind
-        if self.wind:
-            self.push = np.random.choice(range(2),1,[0.5,0.5])
-            self.push = self.push[0]
-        else:
-            self.push = 0
-
-        # print(self.push)
-        # print(self.direction)
-
-
-        if (self.current_position[0] + self.actions[self.direction][0] < 0 or
-            self.current_position[0] + self.actions[self.direction][0] > 11 or
-            self.current_position[1] + self.actions[self.direction][1] + self.push < 0 or
-            self.current_position[1] + self.actions[self.direction][1] + self.push > 11)  :
-
-            self.reward = self.get_reward(self.current_position)
-            # print(self.current_position, self.reward, "Step")
-            # print("if")
-            return self.current_position, self.reward
-
-        else : 
-            x = self.current_position[0] + self.actions[self.direction][0]
-            y = self.current_position[1] + self.actions[self.direction][1] + self.push
-            self.current_position = [x,y]
-            self.reward = self.get_reward(self.current_position)
-            # print(self.current_position, self.direction, self.reward, "Step")
-            # print("else",self.actions[self.direction][0], self.actions[self.direction][1] + self.push )
-            return self.current_position, self.reward
-
-        
+        return self.direction
 
 
     def get_action_probs(self, selected_action):
@@ -146,6 +104,40 @@ class PdwEnv(gym.Env):
         self.probs[selected_action] = 0.9
 
         return self.probs
+
+
+    def step(self, curr_state, action):
+        # Return the postion,reward after performing an action.
+
+        # self.direction = self.actual_action(selected_action)
+        
+
+        # Because of wind
+        if self.wind:
+            self.push = np.random.choice(range(2),1,[0.5,0.5])
+            self.push = self.push[0]
+        else:
+            self.push = 0
+
+
+        if (curr_state[0] + self.actions[action][0] < 0 or
+            curr_state[0] + self.actions[action][0] > 11 or
+            curr_state[1] + self.actions[action][1] + self.push < 0 or
+            curr_state[1] + self.actions[action][1] + self.push > 11)  :
+
+            self.reward = self.get_reward(curr_state)
+            next_state = curr_state
+            # print("if",self.current_position, self.reward, "Step")
+            return next_state, self.reward
+
+        else : 
+            x = curr_state[0] + self.actions[action][0]
+            y = curr_state[1] + self.actions[action][1] + self.push
+            next_state = [x,y]
+            self.reward = self.get_reward(curr_state)
+            # print(self.current_position, self.direction, self.reward, "Step")
+            # print("else",self.actions[self.direction][0], self.actions[self.direction][1] + self.push )
+            return next_state, self.reward
 
 
     def random_action(self):
