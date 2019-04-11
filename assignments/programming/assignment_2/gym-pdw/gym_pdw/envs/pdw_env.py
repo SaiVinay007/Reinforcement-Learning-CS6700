@@ -118,7 +118,7 @@ class PdwEnv(gym.Env):
             self.push = self.push[0]
         else:
             self.push = 0
-
+        
 
         if (curr_state[0] + self.actions[action][0] < 0 or
             curr_state[0] + self.actions[action][0] > 11 or
@@ -134,7 +134,7 @@ class PdwEnv(gym.Env):
             x = curr_state[0] + self.actions[action][0]
             y = curr_state[1] + self.actions[action][1] + self.push
             next_state = [x,y]
-            self.reward = self.get_reward(curr_state)
+            self.reward = self.get_reward(next_state)
             # print(self.current_position, self.direction, self.reward, "Step")
             # print("else",self.actions[self.direction][0], self.actions[self.direction][1] + self.push )
             return next_state, self.reward
