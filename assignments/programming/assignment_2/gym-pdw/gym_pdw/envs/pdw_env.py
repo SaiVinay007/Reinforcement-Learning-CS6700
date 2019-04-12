@@ -23,9 +23,10 @@ class PdwEnv(gym.Env):
 
         # Initialize the start state
         idx = np.random.choice([0,1,2,3])
+        
         # The current position
-        temp = [[6,0],[7,0],[10,0],[11,0]]
-        self.current_position = temp[idx]
+        # temp = [[6,0],[7,0],[10,0],[11,0]]
+        # self.current_position = temp[idx]
 
         # self.current_position = get_start_positions()[idx]
         
@@ -33,9 +34,9 @@ class PdwEnv(gym.Env):
         # actions possible
         # Our origin is on the top left corner
         self.actions = {0 : [-1,0], # North
-                        1 : [0,1], # East
+                        1 : [0,1],  # East
                         2 : [0,-1], # West
-                        3 : [1,0] # South
+                        3 : [1,0]   # South
                         } 
 
         self.action_space = spaces.Discrete(len(self.actions))
@@ -86,30 +87,38 @@ class PdwEnv(gym.Env):
         return self.reward
 
     
-    def get_state(self):
-        return self.current_position
+    # def get_state(self):
+    #     return self.current_position
 
 
     def actual_action(self, selected_action):
-        self.probs = self.get_action_probs(selected_action)
-        self.direction = np.random.choice(range(4),1,self.probs)
-        self.direction = self.direction[0]
-
-        return self.direction
-
-
-    def get_action_probs(self, selected_action):
         # Get the probabilities of performing an action 
-        self.probs = [0.1/3, 0.1/3, 0.1/3, 0.1/3]
-        self.probs[selected_action] = 0.9
+        # print("********")
+        # print(selected_action)
+        probs = [0.1/3, 0.1/3, 0.1/3, 0.1/3]
+        probs[selected_action] = 0.9
+        # print(probs)
+        direction = np.random.choice([0,1,2,3],1,p = probs) # if p = is not given, its not working
+        direction = direction[0]
+        # print(direction)
+        # print("********")
 
-        return self.probs
+        return direction
+
+
+    # def get_action_probs(self, selected_action):
+        
+    #     return probs
 
 
     def step(self, curr_state, action):
         # Return the postion,reward after performing an action.
-
-        # self.direction = self.actual_action(selected_action)
+        # print(action)
+        # print("-------------")
+        # print("sel",action)
+        action = self.actual_action(action)
+        # print("act",action)
+        # print("-------------")
         
 
         # Because of wind
@@ -153,10 +162,59 @@ class PdwEnv(gym.Env):
         s_pos = self.get_start_positions()
         # print(s_pos, idx)
         pos = s_pos[idx]
-        self.current_position = pos
+        # self.current_position = pos
         # self.grid = self.make_grid()
+        return pos
         
 
+    def large_puddle_world(self , scale_x, scale_y, goal):
+        self.new_grid = np.zeros([12*scale_x,12*scale_y])
+        
+        # decx = scale_x - 1
+        # decy = scale_y - 1
+
+        # The puddle
+        self.new_grid[5*scale_x  : 8*scale_x   , 6*scale_y  :8*scale_y ]      -= 1
+        self.new_grid[6*scale_x  : 8*scale_x   , 7*scale_y  :8*scale_y ]      += 1
+        self.new_grid[4*scale_x  : 9*scale_x   , 5*scale_y  :9*scale_y ]      -= 1
+        self.new_grid[7*scale_x  : 9*scale_x   , 8*scale_y  :9*scale_y ]      += 1
+        self.new_grid[3*scale_x  : 10*scale_x  , 4*scale_y  :10*scale_y]     -= 1
+        self.new_grid[8*scale_x  : 10*scale_x  , 9*scale_y  :10*scale_y]     += 1
+
+        # The Goals
+        # Previous goals = [[0,11],[2,9],[7,8]] 
+        if goal == 'A':
+            self.new_grid[0*scale_x : 1*scale_x , 11*scale_y: 12*scale_y ] = 10
+        elif goal =='B':
+            self.new_grid[2*scale_x : 3*scale_x , 9*scale_y : 10*scale_y] = 10            
+        elif goal=='C':
+            self.new_grid[7*scale_x : 8*scale_x , 8*scale_y : 9*scale_y ] = 10          
+
+        
+        return self.new_grid
+
+
+    def large_start_pos(self, new_grid):
+        # The start positions  
+        # Previous start positions = [[6,0],[7,0],[10,0],[11,0]]
+        self.new_start_pos = []
+        st_ps = self.get_start_positions()
+        for k in range(len(st_ps)):
+            x,y = st_ps[k]
+            for i in range(x*scale_x,(x+1)*scale_x):
+                for j in range(y,(y+1)*scale_y):
+                    self.new_start_pos.append([i,j])
+        return self.new_start_pos
+
+        
+    def large_reset(self):
+        # Initialize the start state
+        idx = np.random.choice([0,1,2,3])
+        s_pos = self.get_start_positions()
+        # print(s_pos, idx)
+        pos = s_pos[idx]
+        self.current_position = pos
+        # self.grid = self.make_grid()
     
     def render(self, mode='human'):
         ...
