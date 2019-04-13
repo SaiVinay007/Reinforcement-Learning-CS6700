@@ -113,13 +113,7 @@ class PdwEnv(gym.Env):
 
     def step(self, curr_state, action):
         # Return the postion,reward after performing an action.
-        # print(action)
-        # print("-------------")
-        # print("sel",action)
         action = self.actual_action(action)
-        # print("act",action)
-        # print("-------------")
-        
 
         # Because of wind
         if self.wind:
@@ -144,8 +138,7 @@ class PdwEnv(gym.Env):
             y = curr_state[1] + self.actions[action][1] + self.push
             next_state = [x,y]
             self.reward = self.get_reward(next_state)
-            # print(self.current_position, self.direction, self.reward, "Step")
-            # print("else",self.actions[self.direction][0], self.actions[self.direction][1] + self.push )
+
             return next_state, self.reward
 
 
@@ -161,10 +154,10 @@ class PdwEnv(gym.Env):
         idx = np.random.choice([0,1,2,3])
         s_pos = self.get_start_positions()
         # print(s_pos, idx)
-        pos = s_pos[idx]
+        self.pos = s_pos[idx]
         # self.current_position = pos
         # self.grid = self.make_grid()
-        return pos
+        return self.pos
         
 
     def large_puddle_world(self , scale_x, scale_y, goal):
@@ -185,14 +178,21 @@ class PdwEnv(gym.Env):
         # Previous goals = [[0,11],[2,9],[7,8]] 
         if goal == 'A':
             self.new_grid[0*scale_x : 1*scale_x , 11*scale_y: 12*scale_y ] = 10
+            self.goal_region = [0*scale_x, 1*scale_x, 11*scale_y, 12*scale_y ]
+
         elif goal =='B':
             self.new_grid[2*scale_x : 3*scale_x , 9*scale_y : 10*scale_y] = 10            
+            self.goal_region = [2*scale_x, 3*scale_x, 9*scale_y, 10*scale_y ]
+
         elif goal=='C':
             self.new_grid[7*scale_x : 8*scale_x , 8*scale_y : 9*scale_y ] = 10          
+            self.goal_region = [7*scale_x, 8*scale_x, 8*scale_y, 9*scale_y ]
 
-        
-        return self.new_grid
+        return self.new_grid, self.goal_region 
 
+    def large_rewards(self, new_grid):
+        self.reward = new_grid[position[0],position[1]]
+        return self.reward        
 
     def large_start_pos(self, new_grid):
         # The start positions  
@@ -207,14 +207,42 @@ class PdwEnv(gym.Env):
         return self.new_start_pos
 
         
-    def large_reset(self):
+    def large_reset(self, l_start_positions):
         # Initialize the start state
-        idx = np.random.choice([0,1,2,3])
-        s_pos = self.get_start_positions()
-        # print(s_pos, idx)
-        pos = s_pos[idx]
-        self.current_position = pos
+        idx = np.random.choice(range(len(l_start_positions)))
+        self.pos = l_start_positions[idx]
+        return self.pos
         # self.grid = self.make_grid()
+
+    def large_step(curr_state, action):
+        # Return the postion,reward after performing an action.
+        action = self.actual_action(action)
+
+        # Because of wind
+        if self.wind:
+            self.push = np.random.choice(range(2),1,[0.5,0.5])
+            self.push = self.push[0]
+        else:
+            self.push = 0
+        
+
+        if (curr_state[0] + self.actions[action][0] < 0 or
+            curr_state[0] + self.actions[action][0] > 11 or
+            curr_state[1] + self.actions[action][1] + self.push < 0 or
+            curr_state[1] + self.actions[action][1] + self.push > 11)  :
+
+            self.reward = self.large_rewards(curr_state)
+            next_state = curr_state
+            # print("if",self.current_position, self.reward, "Step")
+            return next_state, self.reward
+
+        else : 
+            x = curr_state[0] + self.actions[action][0]
+            y = curr_state[1] + self.actions[action][1] + self.push
+            next_state = [x,y]
+            self.reward = self.large_rewards(next_state)
+
+            return next_state, self.reward
     
     def render(self, mode='human'):
         ...
