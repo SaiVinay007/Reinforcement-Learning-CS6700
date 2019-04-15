@@ -69,13 +69,13 @@ class FA_SARSA_lambda:
         
         
         for episode in range(episodes):
-            
+            # Eligibility
             E = np.zeros([22])
             
             curr_state = env.large_reset(start_pos)
             
             curr_action = self.select_action(epsilon, curr_state, Q, env)            
-            
+            # feature of current state,action
             feat = self.make_feature(curr_state, curr_action)
             
             if episode%20 ==0:
@@ -92,6 +92,7 @@ class FA_SARSA_lambda:
 
                 E = gamma*lambda_*E + feat
                 
+                # Updating the parameters
                 theta = self.update(curr_state, curr_action, reward, next_state, next_action, E, alpha, gamma, theta)
                 
                 
@@ -105,8 +106,8 @@ class FA_SARSA_lambda:
 
                 if (curr_state[0]>=x1  and curr_state[0]<x2 and 
                     curr_state[1]>=y1  and curr_state[1]<y2):
-                    print("Steps =======================", steps[episode])
-                    print("reward=======================", avg_reward[episode])
+                    # print("Steps =======================", steps[episode])
+                    # print("reward=======================", avg_reward[episode])
                     break
 
         return avg_reward, steps, theta
