@@ -1,1 +1,3 @@
-Run  sudo python3 setup.py install for installing the environment.
+Run  "sudo pip3 install -e  gym-gridworlds" for installing the environment.
+
+  
