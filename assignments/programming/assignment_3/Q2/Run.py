@@ -15,14 +15,15 @@ class DQN():
         self.hidden_layer2_size = args.h2
         self.hidden_layer3_size = args.h3
 
-        self.target_update_freq = args.target_freq
         self.epsilon = args.epsilon
-        self.exploration_decay = args.eps_decay
+        self.epsilon_decay = args.eps_decay
+        self.ep_up = args.epsilon_update
+        
+        self.target_update_freq = args.target_freq
         self.EPISODES = args.episodes
         self.gamma = args.gamma
         self.LAMBDA = args.Lambda
         self.batch_size = args.batch_size
-        self.ep_up = args.epsilon_update
 
 
         # State representation size and action space size 
@@ -39,7 +40,8 @@ class DQN():
 
     def Q_network(self):
         
-        ## The primary network
+        ### The primary network
+
         # Initializing primary networks weights and biases
         # All the weights and biases of primary network
         self.primary_weights = {
@@ -59,7 +61,8 @@ class DQN():
         self.Q_primary = tf.add(tf.matmul(p_h2, self.primary_weights['w3']), self.primary_weights['b3'])
 
 
-        ## The target network
+        ### The target network
+
         # Initializing target networks weights and biases
         # All the weights and biases of target network
         self.target_weights = {
@@ -79,24 +82,29 @@ class DQN():
         self.Q_target = tf.add(tf.matmul(t_h2, self.target_weights['w3']), self.target_weights['b3'])
 
 
-        ## Loss and optimizer
+        ### Loss and optimizer
+
+        # We need to get the Q values for the actions performed so we multiply the 
+        # one hot form of action to the Q values predicted from the primary network
         self.action = tf.placeholder(dtype = tf.int32, shape= [None], name = 'actions') 
         self.one_hot_action = tf.one_hot(self.action, self.output_size, 1.0, 0.0, name = 'one_hot_action')
         self.predicted = tf.reduce_sum(tf.multiply(self.Q_primary, self.one_hot_action, name = 'predicted'), reduction_indices = [1])
-
-        # self.predicted = tf.reduce_max(self.Q_primary, axis = 1)
+        # self.predicted = tf.placeholder(dtype = tf.float32, shape= [None], name = 'predicted')
+        
+        # We here get the reward + the output of Q values from target network
         self.expected = tf.placeholder(dtype = tf.float32, shape= [None], name = 'expected')
+
+        # The mse loss        
+        # self.loss = tf.reduce_mean(tf.square(self.expected - self.predicted)) 
+        self.loss = tf.losses.mean_squared_error(self.expected, self.predicted)
         
-        # adding regularization to the mean square error 
-        self.loss = tf.reduce_mean(tf.square(self.expected - self.predicted)) 
-        
+        # Writing the summary to tensorboard
         tf.summary.scalar('loss', self.loss)
         
-        
-        # to keep track of the number of updates
+        # to keep track of the number of updates made 
         self.global_step_tensor = tf.train.get_or_create_global_step()                                                        
 
-        # optimizer updates the weights so as to decrease the loss
+        # optimizer updates the weights so as to decrease the loss, we chose adam optimizer
         self.optimizer = tf.train.AdamOptimizer(args.learning_rate).minimize(self.loss, global_step=self.global_step_tensor)
 
 
@@ -105,10 +113,11 @@ class DQN():
     def train(self, args):
 
         # stores the average reward
+        '''
         avg_rew = tf.Variable(np.zeros(100), dtype = tf.float32, name = "average_total_reward" )
         tf.summary.scalar('average reward', avg_rew)
         merged = tf.summary.merge_all()
-
+        '''
         
         # creating a session
         self.sess = tf.Session()
@@ -121,57 +130,70 @@ class DQN():
         self.sess.run(tf.global_variables_initializer())
         # summary = self.sess.run(merged)                  
 
-        
+        # Initializing replay memory
         self.replay = ReplayMemory(args)
         
+        # The total reward obtained in each episode
         total_reward = np.zeros([self.EPISODES])
+        # Keeping track of total steps over all episodes
         total_steps = 0
+
         prev_100_episodes = []
+        
         # Run for max episodes
         for i in range(self.EPISODES):
+            # for every episode we reset the environment
             curr_state = self.env.reset() 
-            steps = 0
+            # number of curr_steps in current episode
+            curr_steps = 0
 
             while True:
                 # taking a step
                 # self.env.render()
-
+                
+                # select an action 
                 curr_action = self.select_action(curr_state)
+                # get the next state, rewards and a bool telling if episode has terminated or not
                 next_state, reward, done, _ = self.env.step(curr_action)
 
-                steps+=1
+                # increase the steps in current episode, total steps, reward in current episode
+                curr_steps+=1
                 total_steps+=1
-
                 total_reward[i] += reward
-                # print("curr_action = ", curr_action)
 
+                # add the transition into replay memory
                 self.replay.add_experience(curr_state, curr_action, reward, next_state, done)
 
+                # if replay memory has size more than batch, we perform updates to the primary network by 
+                # sampling a batch of transitions from replay memory
                 if total_steps/self.batch_size > 1:
                     batch = self.replay.sample_memory()
-                    self.primary_update(batch)
+                    loss_val = self.primary_update(batch)
+                    print("step = ", total_steps , "loss = ", loss_val )
 
-                # Updating the target networks weights
+                # Updating the target networks weights at some fixed interval to primary network weights : hard update
                 if total_steps%self.target_update_freq == 0 :
                     for j in self.primary_weights:
                         self.sess.run(tf.assign(self.target_weights[j], self.primary_weights[j]))
-                    # print(self.sess.run(self.primary_weights['w3']),   self.sess.run(self.target_weights['w3']) )
                     print("hi =====================================================================================")
                 
+                # decaying epislon i.e, exploration 
                 if total_steps%self.ep_up:
-                    self.epsilon *= self.exploration_decay
-                    if self.epsilon < 0.01:  
-                        self.epsilon = 0.01
+                    self.epsilon *= self.epsilon_decay
+                    if self.epsilon < 0.05:  
+                        self.epsilon = 0.05
                                     
-
+                # updating current state
                 curr_state = next_state
 
                 # Termination 
-                if done or steps > 200:
+                if done or curr_steps > 200:
                     break
-            print("totalreward = ", total_reward[i], "steps = ", steps ,"\n")
+
+            print("totalreward = ", total_reward[i], "curr_steps = ", curr_steps ,"\n")
 
                 
+
     def select_action(self, curr_state):
         # selects action according to epsilon-greedy on Q value function
         if np.random.uniform(0,1)<self.epsilon:
@@ -179,29 +201,38 @@ class DQN():
         else:
             curr_state = np.expand_dims(curr_state, axis = 0)
             Q_values = self.sess.run(self.Q_primary, feed_dict={self.x : curr_state})
-            print(Q_values)
+            # print(Q_values)
             return np.argmax(Q_values) 
+
 
     
     def primary_update(self, batch):
         
         # all the states of the selected batch
         states = [tup[0] for tup in batch]
-
         # all the actions of the selected batch
         actions = [tup[1] for tup in batch]
-
         # all the next states of the selected batch obtained from the previous states
         next_states = [tup[3] for tup in batch]
-        
         # the rewards obtained during this transition
         rewards = [tup[2] for tup in batch]
-        # rewards = np.asarray(rewards)
+        # to check for terminal states
+        terminals = [tup[4] for tup in batch]
 
-        estimated_val = self.gamma*np.max(self.sess.run(self.Q_target, feed_dict={self.x : next_states}), axis=1) + rewards 
-        # print(estimated_val.shape)
-        global_step_val, _, loss_val = self.sess.run([self.global_step_tensor, self.optimizer, self.loss], feed_dict={self.x : states, self.expected : estimated_val, self.action : actions})
-        print("global_step = ", global_step_val, "loss = ", loss_val)   
+        for i in range(len(states)):
+            expected_val = rewards[i]
+            expected_val = np.expand_dims(expected_val, axis = 0)
+            
+            if not terminals[i]:
+                next_states[i] = np.expand_dims(next_states[i], axis = 0)
+                expected_val = self.gamma*np.amax(self.sess.run(self.Q_target, feed_dict={self.x : next_states[i]}), axis=1) + rewards[i] 
+            # expected_val = np.expand_dims(expected_val, axis = 0)
+            states[i] = np.expand_dims(states[i], axis = 0)
+            actions[i] = np.expand_dims(actions[i], axis = 0)
+
+            _, loss_val = self.sess.run([self.optimizer, self.loss], feed_dict={self.x : states[i], self.expected : expected_val, self.action : actions[i]})
+
+        return loss_val
 
 
     # def test(self):
@@ -231,7 +262,7 @@ class ReplayMemory():
             # Increase to add an experience
             self.memory.append(None)
         # the transition that we want to store
-        experience = (curr_state, curr_action, reward, next_state)
+        experience = (curr_state, curr_action, reward, next_state, done)
         # add experience at the current position
         self.memory[self.position] = experience
         # Increase the position by 1
@@ -259,15 +290,15 @@ if __name__=='__main__':
     parser.add_argument("--h3",             type=float, default=2,            help="size of hidden layer3")
 
     parser.add_argument("--epsilon",        type=float, default=0.5,          help="epsilon value")
-    parser.add_argument("--eps_decay",      type=float, default=0.95,        help="epsilon value")
+    parser.add_argument("--eps_decay",      type=float, default=0.995,        help="epsilon value")
     parser.add_argument("--epsilon_update", type=float, default=40,           help="epsilon update freq")
     parser.add_argument("--gamma",          type=float, default=0.95,         help="gamma value")
     parser.add_argument("--Lambda",         type=float, default=0.001,        help="regularization lambda value")
     parser.add_argument("--learning_rate",  type=float, default=0.001,        help="learning rate for training")
 
-    parser.add_argument("--target_freq",    type=float, default=1000,          help="target network update frequency")
+    parser.add_argument("--target_freq",    type=float, default=1000,         help="target network update frequency")
     parser.add_argument("--episodes",       type=float, default=2000,         help="number of episodes for training")
-    parser.add_argument("--memory_size",    type=float, default=10000,         help="memory max size of replay memory")
+    parser.add_argument("--memory_size",    type=float, default=10000,        help="memory max size of replay memory")
     parser.add_argument("--batch_size",     type=int,   default=20,           help="Batch Size")
     parser.add_argument("--summaries_dir",  type=str,   default='./summary/', help="path to tensorboard summary")
 
@@ -280,7 +311,3 @@ if __name__=='__main__':
     dqn.Q_network()
     
     dqn.train(args)
-
-
-
-
