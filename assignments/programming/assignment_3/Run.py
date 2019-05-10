@@ -49,7 +49,7 @@ class SMDP_Q():
 '''
 
 
-
+env = gym.make('Cartpole-v0')
 env = gym.make('FourRooms-v0')
 env = gym.make('gridworld-v0')
 

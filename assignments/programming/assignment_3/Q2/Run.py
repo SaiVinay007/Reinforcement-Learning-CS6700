@@ -45,12 +45,12 @@ class DQN():
         # Initializing primary networks weights and biases
         # All the weights and biases of primary network
         self.primary_weights = {
-            'w1' : tf.Variable(np.random.normal(0, 0.1, size = (self.input_size, self.hidden_layer1_size)), dtype = tf.float32, name = "primary_weight1" ),
-            'b1' : tf.Variable(np.random.normal(0, 0.1, size = (self.hidden_layer1_size)), dtype = tf.float32, name = "primary_bias1" ),
-            'w2' : tf.Variable(np.random.normal(0, 0.1, size = (self.hidden_layer1_size, self.hidden_layer2_size)), dtype = tf.float32, name = "primary_weight2" ),
-            'b2' : tf.Variable(np.random.normal(0, 0.1, size = (self.hidden_layer2_size)), dtype = tf.float32, name = "primary_bias2" ),
-            'w3' : tf.Variable(np.random.normal(0, 0.1, size = (self.hidden_layer2_size, self.hidden_layer3_size)), dtype = tf.float32, name = "primary_weight3" ),
-            'b3' : tf.Variable(np.random.normal(0, 0.1, size = (self.hidden_layer3_size)), dtype = tf.float32, name = "primary_bias3" )
+            'w1' : tf.Variable(np.random.normal(0, 0.01, size = (self.input_size, self.hidden_layer1_size)), dtype = tf.float32, name = "primary_weight1" ),
+            'b1' : tf.Variable(np.random.normal(0, 0.01, size = (self.hidden_layer1_size)), dtype = tf.float32, name = "primary_bias1" ),
+            'w2' : tf.Variable(np.random.normal(0, 0.01, size = (self.hidden_layer1_size, self.hidden_layer2_size)), dtype = tf.float32, name = "primary_weight2" ),
+            'b2' : tf.Variable(np.random.normal(0, 0.01, size = (self.hidden_layer2_size)), dtype = tf.float32, name = "primary_bias2" ),
+            'w3' : tf.Variable(np.random.normal(0, 0.01, size = (self.hidden_layer2_size, self.hidden_layer3_size)), dtype = tf.float32, name = "primary_weight3" ),
+            'b3' : tf.Variable(np.random.normal(0, 0.01, size = (self.hidden_layer3_size)), dtype = tf.float32, name = "primary_bias3" )
         }
 
         # Defining the primary network
@@ -110,7 +110,7 @@ class DQN():
 
         
 
-    def train(self, args):
+    def train(self, args, flag):
 
         # stores the average reward
         '''
@@ -118,16 +118,19 @@ class DQN():
         tf.summary.scalar('average reward', avg_rew)
         merged = tf.summary.merge_all()
         '''
-        
         # creating a session
-        self.sess = tf.Session()
+        self.session = tf.Session()
+        
+        summary_writer = tf.summary.FileWriter(args.summaries_dir + '/train', self.session.graph)	
+        summary = tf.Summary()	
+
 
         # Writing summaries
-        train_writer = tf.summary.FileWriter(args.summaries_dir + '/train', self.sess.graph)
-        test_writer = tf.summary.FileWriter(args.summaries_dir + '/test')
+        # train_writer = tf.summary.FileWriter(args.summaries_dir + '/train', self.sess.graph)
+        # test_writer = tf.summary.FileWriter(args.summaries_dir + '/test')
 
         # initializing all the variables
-        self.sess.run(tf.global_variables_initializer())
+        self.session.run(tf.global_variables_initializer())
         # summary = self.sess.run(merged)                  
 
         # Initializing replay memory
@@ -138,7 +141,8 @@ class DQN():
         # Keeping track of total steps over all episodes
         total_steps = 0
 
-        prev_100_episodes = []
+        prev100_episodes = []
+        avg_steps = []
         
         # Run for max episodes
         for i in range(self.EPISODES):
@@ -166,15 +170,17 @@ class DQN():
 
                 # if replay memory has size more than batch, we perform updates to the primary network by 
                 # sampling a batch of transitions from replay memory
-                if total_steps/self.batch_size > 1:
+                if total_steps/self.batch_size > 1 and flag:
                     batch = self.replay.sample_memory()
                     loss_val = self.primary_update(batch)
-                    print("step = ", total_steps , "loss = ", loss_val )
+                    # print("step = ", total_steps , "loss = ", loss_val )
+                if not flag:
+                    loss_val = self.up_without_mem(curr_state, curr_action, next_state, reward)
 
                 # Updating the target networks weights at some fixed interval to primary network weights : hard update
                 if total_steps%self.target_update_freq == 0 :
                     for j in self.primary_weights:
-                        self.sess.run(tf.assign(self.target_weights[j], self.primary_weights[j]))
+                        self.session.run(tf.assign(self.target_weights[j], self.primary_weights[j]))
                     print("hi =====================================================================================")
                 
                 # decaying epislon i.e, exploration 
@@ -185,13 +191,28 @@ class DQN():
                                     
                 # updating current state
                 curr_state = next_state
-
+                        
                 # Termination 
                 if done or curr_steps > 200:
                     break
+            
+            if (len(prev100_episodes) < 100):
+                prev100_episodes.append(curr_steps)
+            else:
+                prev100_episodes[i % 100] = curr_steps
+            mean = np.mean(prev100_episodes)
+            avg_steps.append(mean)
 
-            print("totalreward = ", total_reward[i], "curr_steps = ", curr_steps ,"\n")
 
+            summary.value.add(tag="episode length", simple_value=curr_steps)
+            summary.value.add(tag = "Average reward over 100 episode)", simple_value = mean)
+
+            summary_writer.add_summary(summary, i)
+
+            print("Training: Episode = %d, Length = %d, Global step = %d" % (i, curr_steps, total_steps))
+
+            # print(" totalreward = %d", total_reward[i], "curr_steps = ", curr_steps ,"\n")
+            
                 
 
     def select_action(self, curr_state):
@@ -200,13 +221,21 @@ class DQN():
             return np.random.choice([0,1], p=[0.5,0.5])
         else:
             curr_state = np.expand_dims(curr_state, axis = 0)
-            Q_values = self.sess.run(self.Q_primary, feed_dict={self.x : curr_state})
+            Q_values = self.session.run(self.Q_primary, feed_dict={self.x : curr_state})
             # print(Q_values)
             return np.argmax(Q_values) 
 
+    def up_without_mem(self, state, action, next_state, reward):
+        # without replay buffer 
+        state = np.expand_dims(state, axis = 0)
+        next_state = np.expand_dims(state, axis = 0)
+
+        expected_val = self.gamma*np.amax(self.session.run(self.Q_target, feed_dict={self.x : next_state}), axis=1) + reward
+        _, loss_val = self.session.run([self.optimizer, self.loss], feed_dict={self.x : state, self.expected : expected_val, self.action : action})
 
     
-    def primary_update(self, batch):
+    def primary_update(self, batch, flag):
+        
         
         # all the states of the selected batch
         states = [tup[0] for tup in batch]
@@ -225,14 +254,32 @@ class DQN():
             
             if not terminals[i]:
                 next_states[i] = np.expand_dims(next_states[i], axis = 0)
-                expected_val = self.gamma*np.amax(self.sess.run(self.Q_target, feed_dict={self.x : next_states[i]}), axis=1) + rewards[i] 
+                expected_val = self.gamma*np.amax(self.session.run(self.Q_target, feed_dict={self.x : next_states[i]}), axis=1) + rewards[i] 
             # expected_val = np.expand_dims(expected_val, axis = 0)
             states[i] = np.expand_dims(states[i], axis = 0)
             actions[i] = np.expand_dims(actions[i], axis = 0)
 
-            _, loss_val = self.sess.run([self.optimizer, self.loss], feed_dict={self.x : states[i], self.expected : expected_val, self.action : actions[i]})
+            _, loss_val = self.session.run([self.optimizer, self.loss], feed_dict={self.x : states[i], self.expected : expected_val, self.action : actions[i]})
 
         return loss_val
+            
+    
+    # Simple function to visually 'test' a policy
+    def playPolicy(self):
+    
+    	done = False
+    	steps = 0
+    	state = self.env.reset()
+    
+    	# we assume the CartPole task to be solved if the pole remains upright for 200 steps
+    	while not done and steps < 200: 	
+    		self.env.render()				
+    		q_vals = self.session.run(self.Q, feed_dict={self.x: [state]})
+    		action = q_vals.argmax()
+    		state, _, done, _ = self.env.step(action)
+    		steps += 1
+    
+    	return steps
 
 
     # def test(self):
@@ -285,19 +332,19 @@ if __name__=='__main__':
     parser.add_argument("--input_size",     type=float, default=4,            help="input state vector size")
     parser.add_argument("--output_size",    type=float, default=2,            help="output action vector size")
 
-    parser.add_argument("--h1",             type=float, default=24,           help="size of hidden layer1")
-    parser.add_argument("--h2",             type=float, default=24,           help="size of hidden layer2")
+    parser.add_argument("--h1",             type=float, default=64,           help="size of hidden layer1")
+    parser.add_argument("--h2",             type=float, default=64,           help="size of hidden layer2")
     parser.add_argument("--h3",             type=float, default=2,            help="size of hidden layer3")
 
     parser.add_argument("--epsilon",        type=float, default=0.5,          help="epsilon value")
     parser.add_argument("--eps_decay",      type=float, default=0.995,        help="epsilon value")
-    parser.add_argument("--epsilon_update", type=float, default=40,           help="epsilon update freq")
+    parser.add_argument("--epsilon_update", type=float, default=20,           help="epsilon update freq")
     parser.add_argument("--gamma",          type=float, default=0.95,         help="gamma value")
     parser.add_argument("--Lambda",         type=float, default=0.001,        help="regularization lambda value")
-    parser.add_argument("--learning_rate",  type=float, default=0.001,        help="learning rate for training")
+    parser.add_argument("--learning_rate",  type=float, default=0.01,        help="learning rate for training")
 
-    parser.add_argument("--target_freq",    type=float, default=1000,         help="target network update frequency")
-    parser.add_argument("--episodes",       type=float, default=2000,         help="number of episodes for training")
+    parser.add_argument("--target_freq",    type=float, default=300,         help="target network update frequency")
+    parser.add_argument("--episodes",       type=float, default=2000,          help="number of episodes for training")
     parser.add_argument("--memory_size",    type=float, default=10000,        help="memory max size of replay memory")
     parser.add_argument("--batch_size",     type=int,   default=20,           help="Batch Size")
     parser.add_argument("--summaries_dir",  type=str,   default='./summary/', help="path to tensorboard summary")
@@ -310,4 +357,14 @@ if __name__=='__main__':
     # initializing Q networks
     dqn.Q_network()
     
-    dqn.train(args)
+    dqn.train(args, False)
+
+    # Visualize the learned behaviour for a few episodes
+    results = []
+    for i in range(50):
+    	episode_length = dqn.playPolicy()
+    	print("Test steps = ", episode_length)
+    	results.append(episode_length)
+    print("Mean steps = ", sum(results) / len(results))	    
+    print("\nFinished.")
+    print("\nCiao, and hasta la vista...\n")
